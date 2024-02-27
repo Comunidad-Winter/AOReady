@@ -1,0 +1,69 @@
+
+====================================
+ AO Ready
+
+	programado por
+
+     		     	^[GS]^
+====================================
+   Website: www.gs-zone.com.ar
+
+NOTA:
+En el proyecto se encuentran fragmenos
+totales y parciales de codigo de distintos
+autores a los cuales se les respera todo 
+el derecho.
+El autor no se hace responsable por daños
+que pudiera ocacionar el software, ya que
+deja marcado que es un BETA de pruebas.
+
+	** [ Staff AO Ready ] **
+
+	Programador = ^[GS]^
+	Dateo = Pada
+	Ambientacion = Pada
+	AlphaTester = Pada
+
+
+||||||||||||||||||||||||||||||||||||||
+Cambios:
+
+Ao Ready 0.2-2 (08/08/2005)
+	* Repare el error que tiraba dados invalidos. (Gracias a Pada)
+Ao Ready 0.2-1 (07/08/2005)
+	* Repare un error con la experiencia, que no posia subir a mas de 9999999.
+Ao Ready 0.2 (04/08/2005)
+	* Todas las clases comienzan con Super Dardo(por decir asi)
+	* Se aceleraron los intervalos de los NPCs (Gracias a Pada)
+	* Los mapas fueron ambientados a los nuevos Datas (Gracias a Pada)
+	* Todos los npcs fueron reasignados en exp. y oro (Gracias a Pada)
+	* Se realizo un completo reajuste de todos las Datas (Gracias a Pada)
+	* MAXIMOS:
+		Nivel = 177
+		HP = 9999
+		MP = 9000
+		Hit = 450
+		Def = 450
+	* Los skilles naturales no se dejan de subir aunque pasemos el nivel 50.
+	* Reparado error de los mapas. (v2)
+	- El /CI ahora se puede usar como el /Haceritem... si no ponemos el @ creara 100
+	* Intento de reparacion al Error "Cliente incorrecto"
+	- Agregado el comando /CUENTAREGRESIVA
+	- Le cambie de color al listado del /ONLINE
+AO Ready 0.1 (30/07/2005)
+	* Corregidos otros bugs y testeado.
+	* Una correccion que decia "Cliente incorrecto" siempre.
+	- Cree un logo rapidamente, sin ningun soft especial :P es bien gris jaja
+	/ En teoria, el servidor es funcional en Win98 tmb.
+	- Algunos retoques personales, simples.
+	- El servidor no puede ser ejecutado más veces a la vez.
+	- Soporte AO-Line SE
+	- AntiCliente AoH, u Cliente incorrecto.
+	- Proteccion contra PJs sin nick
+	- Al agarrar ORO, se auto-equipa
+	- Desactivado el Efecto del Frio
+	- Desactivada la Lluvia
+	- Se elimino todos los vestigios del sistema de encriptacion incompleto en el codigo.
+	- Se agregaron creditos al Menu Principal
+	- Se agrego el comando /CREDITOS
+	- Tomando como base el codigo fuente de Alkon 0.11.2, descargado de www.aoSv.tk

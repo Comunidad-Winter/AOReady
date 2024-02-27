@@ -1,0 +1,96 @@
+'#################### LISTA DE SPAWN #############################
+[INIT]
+NumNPCs=32
+
+
+[LIST]
+NI1=5
+NN1=Sacerdote
+
+NI2=6
+NN2=Guardia Bueno
+
+NI3=14
+NN3=Pociones Comunes
+
+NI4=15
+NN4=Taberna
+
+NI5=24
+NN5=Banquero
+
+NI6=40
+NN6=Comida
+
+NI7=51
+NN7=MAGO I
+
+NI8=72
+NN8=REY
+
+NI9=87
+NN9=Guardia Mago Bueno
+
+NI10=98
+NN10=DEMONIO
+
+NI11=104
+NN11=APOSTADOR
+
+NI12=105
+NN12=Guardia Mago MALO
+
+NI13=107
+NN13=Guardia MALO
+
+NI14=106
+NN14=Guardia Arquero BUENO
+
+NI15=113
+NN15=Armaduras Buenas
+
+NI16=116
+NN16=OBJETOS NUEVOS !!
+
+NI17=118
+NN17=POCIONES MEJORADAS
+
+NI18=119
+NN18=MAGO GROSO
+
+NI19=120
+NN19=Entrenador Medio
+
+NI20=121
+NN20=Entrenador Bajo
+
+NI21=900
+NN21=Sacerdote del Rey
+
+NI22=901
+NN22=Guerrero del Rey
+
+NI23=902
+NN23=Mago del Rey
+
+NI24=903
+NN24=Cazador del Rey
+
+NI25=904
+NN25=Rey AoReady
+
+NI26=905
+NN26=Dragon PRO
+
+NI27=906
+NN27=Medusa Reina
+
+NI28=582
+NN28=Enano de las profundidades
+
+NI29=527
+NN29=Dragon Rojo chico
+
+
+
+
