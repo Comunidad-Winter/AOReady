@@ -1,0 +1,437 @@
+Buscar: Case "NOVER" y arriba poner:
+
+Case "SIVER"
+            Rdata = Right$(Rdata, Len(Rdata) - 5)
+            CharIndex = Val(ReadField(1, Rdata, 44))
+            charlist(CharIndex).meveo = (Val(ReadField(2, Rdata, 44)) = 1)
+            Exit Sub
+
+Buscan, Public Type Char y debajo ponen:
+
+meveo As Boolean
+
+en reset char info ponen:
+
+charlist(CharIndex).meveo = False y el sub render screen lo reemplazan todo por el siguiente:
+
+
+Sub RenderScreen(tilex As Integer, tiley As Integer, PixelOffsetX As Integer, PixelOffsetY As Integer)
+
+
+On Error Resume Next
+
+If UserCiego Then Exit Sub
+
+Dim Y        As Integer 'Keeps track of where on map we are
+Dim X        As Integer 'Keeps track of where on map we are
+Dim minY     As Integer 'Start Y pos on current map
+Dim maxY     As Integer 'End Y pos on current map
+Dim minX     As Integer 'Start X pos on current map
+Dim maxX     As Integer 'End X pos on current map
+Dim ScreenX  As Integer 'Keeps track of where to place tile on screen
+Dim ScreenY  As Integer 'Keeps track of where to place tile on screen
+Dim Moved    As Byte
+Dim Grh      As Grh     'Temp Grh for show tile and blocked
+Dim TempChar As Char
+Dim TextX    As Integer
+Dim TextY    As Integer
+Dim iPPx     As Integer 'Usado en el Layer de Chars
+Dim iPPy     As Integer 'Usado en el Layer de Chars
+Dim rSourceRect      As RECT    'Usado en el Layer 1
+Dim iGrhIndex        As Integer 'Usado en el Layer 1
+Dim PixelOffsetXTemp As Integer 'For centering grhs
+Dim PixelOffsetYTemp As Integer 'For centering grhs
+Dim nX As Integer
+Dim nY As Integer
+
+'Figure out Ends and Starts of screen
+' Hardcodeado para speed!
+minY = (tiley - 15)
+maxY = (tiley + 15)
+minX = (tilex - 17)
+maxX = (tilex + 17)
+
+
+'Draw floor layer
+ScreenY = 8 + RenderMod.iImageSize
+For Y = (minY + 8) + RenderMod.iImageSize To (maxY - 8) - RenderMod.iImageSize
+    ScreenX = 8 + RenderMod.iImageSize
+    For X = (minX + 8) + RenderMod.iImageSize To (maxX - 8) - RenderMod.iImageSize
+        If X > 100 Or Y < 1 Then Exit For
+        'Layer 1 **********************************
+        With MapData(X, Y).Graphic(1)
+            If (.Started = 1) Then
+                If (.SpeedCounter > 0) Then
+                    .SpeedCounter = .SpeedCounter - 1
+                    If (.SpeedCounter = 0) Then
+                        .SpeedCounter = GrhData(.GrhIndex).Speed
+                        .FrameCounter = .FrameCounter + 1
+                        If (.FrameCounter > GrhData(.GrhIndex).NumFrames) Then _
+                            .FrameCounter = 1
+                    End If
+                End If
+            End If
+
+            'Figure out what frame to draw (always 1 if not animated)
+            iGrhIndex = GrhData(.GrhIndex).Frames(.FrameCounter)
+        End With
+
+        rSourceRect.Left = GrhData(iGrhIndex).sX
+        rSourceRect.Top = GrhData(iGrhIndex).sY
+        rSourceRect.Right = rSourceRect.Left + GrhData(iGrhIndex).pixelWidth
+        rSourceRect.Bottom = rSourceRect.Top + GrhData(iGrhIndex).pixelHeight
+
+        'El width fue hardcodeado para speed!
+        Call BackBufferSurface.BltFast( _
+                ((32 * ScreenX) - 32) + PixelOffsetX, _
+                ((32 * ScreenY) - 32) + PixelOffsetY, _
+                SurfaceDB.GetBMP(GrhData(iGrhIndex).FileNum), _
+                rSourceRect, _
+                DDBLTFAST_WAIT)
+        '******************************************
+        If Not RenderMod.bNoCostas Then
+            'Layer 2 **********************************
+            If MapData(X, Y).Graphic(2).GrhIndex <> 0 Then
+                Call DDrawTransGrhtoSurface( _
+                        BackBufferSurface, _
+                        MapData(X, Y).Graphic(2), _
+                        ((32 * ScreenX) - 32) + PixelOffsetX, _
+                        ((32 * ScreenY) - 32) + PixelOffsetY, _
+                        1, _
+                        1)
+            End If
+            '******************************************
+        End If
+        ScreenX = ScreenX + 1
+    Next X
+    ScreenY = ScreenY + 1
+    If Y > 100 Then Exit For
+Next Y
+
+
+'busco que nombre dibujar
+Call ConvertCPtoTP(frmMain.MainViewShp.Left, frmMain.MainViewShp.Top, frmMain.MouseX, frmMain.MouseY, nX, nY)
+
+
+'Draw Transparent Layers  (Layer 2, 3)
+ScreenY = 8 + RenderMod.iImageSize
+For Y = (minY + 8) + RenderMod.iImageSize To (maxY - 1) - RenderMod.iImageSize
+    ScreenX = 5 + RenderMod.iImageSize
+    For X = (minX + 5) + RenderMod.iImageSize To (maxX - 5) - RenderMod.iImageSize
+        If X > 100 Or X < -3 Then Exit For
+        iPPx = ((32 * ScreenX) - 32) + PixelOffsetX
+        iPPy = ((32 * ScreenY) - 32) + PixelOffsetY
+
+        'Object Layer **********************************
+        If MapData(X, Y).ObjGrh.GrhIndex <> 0 Then
+'            If Y > UserPos.Y Then
+'                Call DDrawTransGrhtoSurfaceAlpha( _
+'                        BackBufferSurface, _
+'                        MapData(X, Y).ObjGrh, _
+'                        iPPx, iPPy, 1, 1)
+'            Else
+                Call DDrawTransGrhtoSurface( _
+                        BackBufferSurface, _
+                        MapData(X, Y).ObjGrh, _
+                        iPPx, iPPy, 1, 1)
+'            End If
+        End If
+        '***********************************************
+        'Char layer ************************************
+        If MapData(X, Y).CharIndex <> 0 Then
+            TempChar = charlist(MapData(X, Y).CharIndex)
+            PixelOffsetXTemp = PixelOffsetX
+            PixelOffsetYTemp = PixelOffsetY
+
+            Moved = 0
+            'If needed, move left and right
+            If TempChar.MoveOffset.X <> 0 Then
+                TempChar.Body.Walk(TempChar.Heading).Started = 1
+                TempChar.Arma.WeaponWalk(TempChar.Heading).Started = 1
+                TempChar.Escudo.ShieldWalk(TempChar.Heading).Started = 1
+                PixelOffsetXTemp = PixelOffsetXTemp + TempChar.MoveOffset.X
+                TempChar.MoveOffset.X = TempChar.MoveOffset.X - (8 * Sgn(TempChar.MoveOffset.X))
+                Moved = 1
+            End If
+            'If needed, move up and down
+            If TempChar.MoveOffset.Y <> 0 Then
+                TempChar.Body.Walk(TempChar.Heading).Started = 1
+                TempChar.Arma.WeaponWalk(TempChar.Heading).Started = 1
+                TempChar.Escudo.ShieldWalk(TempChar.Heading).Started = 1
+                PixelOffsetYTemp = PixelOffsetYTemp + TempChar.MoveOffset.Y
+                TempChar.MoveOffset.Y = TempChar.MoveOffset.Y - (8 * Sgn(TempChar.MoveOffset.Y))
+                Moved = 1
+            End If
+            'If done moving stop animation
+            If Moved = 0 And TempChar.Moving = 1 Then
+                TempChar.Moving = 0
+                TempChar.Body.Walk(TempChar.Heading).FrameCounter = 1
+                TempChar.Body.Walk(TempChar.Heading).Started = 0
+                TempChar.Arma.WeaponWalk(TempChar.Heading).FrameCounter = 1
+                TempChar.Arma.WeaponWalk(TempChar.Heading).Started = 0
+                TempChar.Escudo.ShieldWalk(TempChar.Heading).FrameCounter = 1
+                TempChar.Escudo.ShieldWalk(TempChar.Heading).Started = 0
+            End If
+            
+            '[ANIM ATAK]
+            If TempChar.Arma.WeaponAttack > 0 Then
+                TempChar.Arma.WeaponAttack = TempChar.Arma.WeaponAttack - 1
+                If TempChar.Arma.WeaponAttack = 0 Then
+                    TempChar.Arma.WeaponWalk(TempChar.Heading).Started = 0
+                End If
+            End If
+            '[/ANIM ATAK]
+            
+            'Dibuja solamente players
+            iPPx = ((32 * ScreenX) - 32) + PixelOffsetXTemp
+            iPPy = ((32 * ScreenY) - 32) + PixelOffsetYTemp
+            If TempChar.Head.Head(TempChar.Heading).GrhIndex <> 0 Then
+                If Not charlist(MapData(X, Y).CharIndex).invisible Then
+    #If (ConAlfaB = 1) Then
+                        If TempChar.iBody = 8 Or TempChar.iBody = 145 Then
+                            Call DDrawTransGrhtoSurfaceAlpha(BackBufferSurface, TempChar.Body.Walk(TempChar.Heading), _
+                                    (((32 * ScreenX) - 32) + PixelOffsetXTemp), _
+                                    (((32 * ScreenY) - 32) + PixelOffsetYTemp), _
+                                    1, 1)
+                        Else
+    #End If
+                            Call DDrawTransGrhtoSurface(BackBufferSurface, TempChar.Body.Walk(TempChar.Heading), _
+                                    (((32 * ScreenX) - 32) + PixelOffsetXTemp), _
+                                    (((32 * ScreenY) - 32) + PixelOffsetYTemp), _
+                                    1, 1)
+    #If ConAlfaB = 1 Then
+                        End If
+    #End If
+                        '[END]'
+                        '[CABEZA]'
+    #If ConAlfaB = 1 Then
+                        If TempChar.iHead = 500 Then
+                            Call DDrawTransGrhtoSurfaceAlpha( _
+                                    BackBufferSurface, _
+                                    TempChar.Head.Head(TempChar.Heading), _
+                                    iPPx + TempChar.Body.HeadOffset.X, _
+                                    iPPy + TempChar.Body.HeadOffset.Y, _
+                                    1, 0)
+                        Else
+    #End If
+                            Call DDrawTransGrhtoSurface( _
+                                    BackBufferSurface, _
+                                    TempChar.Head.Head(TempChar.Heading), _
+                                    iPPx + TempChar.Body.HeadOffset.X, _
+                                    iPPy + TempChar.Body.HeadOffset.Y, _
+                                    1, 0)
+    #If ConAlfaB = 1 Then
+                        End If
+    #End If
+                        '[END]'
+                        '[Casco]'
+                            If TempChar.Casco.Head(TempChar.Heading).GrhIndex <> 0 Then
+                                Call DDrawTransGrhtoSurface( _
+                                        BackBufferSurface, _
+                                        TempChar.Casco.Head(TempChar.Heading), _
+                                        iPPx + TempChar.Body.HeadOffset.X, _
+                                        iPPy + TempChar.Body.HeadOffset.Y, _
+                                        1, 0)
+                            End If
+                        '[END]'
+                        '[ARMA]'
+                            If TempChar.Arma.WeaponWalk(TempChar.Heading).GrhIndex <> 0 Then
+                                Call DDrawTransGrhtoSurface( _
+                                        BackBufferSurface, _
+                                        TempChar.Arma.WeaponWalk(TempChar.Heading), _
+                                        iPPx, iPPy, 1, 1)
+                            End If
+                        '[END]'
+                        '[Escudo]'
+                            If TempChar.Escudo.ShieldWalk(TempChar.Heading).GrhIndex <> 0 Then
+                                Call DDrawTransGrhtoSurface( _
+                                        BackBufferSurface, _
+                                        TempChar.Escudo.ShieldWalk(TempChar.Heading), _
+                                        iPPx, iPPy, 1, 1)
+                            End If
+                        '[END]'
+                End If  'end if ~in
+
+                If Dialogos.CantidadDialogos > 0 Then
+                    Call Dialogos.Update_Dialog_Pos( _
+                            (iPPx + TempChar.Body.HeadOffset.X), _
+                            (iPPy + TempChar.Body.HeadOffset.Y), _
+                            MapData(X, Y).CharIndex)
+                End If
+                
+
+                 
+
+                
+                 If Nombres And Abs(nX - X) < 2 And (Abs(nY - Y)) < 2 Then
+                    If TempChar.invisible = False Then
+                        If TempChar.Nombre <> "" Then
+                            Dim lCenter As Long
+                            If InStr(TempChar.Nombre, "<") > 0 And InStr(TempChar.Nombre, ">") > 0 Then
+                                lCenter = (frmMain.TextWidth(Left(TempChar.Nombre, InStr(TempChar.Nombre, "<") - 1)) / 2) - 16
+                                Dim sClan As String: sClan = Mid(TempChar.Nombre, InStr(TempChar.Nombre, "<"))
+                                
+                                
+                                Select Case TempChar.priv
+                                Case 0
+                                    If TempChar.Criminal Then
+                                        Call Dialogos.DrawText(iPPx - lCenter, iPPy + 30, Left(TempChar.Nombre, InStr(TempChar.Nombre, "<") - 1), RGB(ColoresPJ(50).r, ColoresPJ(50).G, ColoresPJ(50).B))
+                                        lCenter = (frmMain.TextWidth(sClan) / 2) - 16
+                                        Call Dialogos.DrawText(iPPx - lCenter, iPPy + 45, sClan, RGB(ColoresPJ(50).r, ColoresPJ(50).G, ColoresPJ(50).B))
+                                        If TempChar.meveo = True Then Call Dialogos.DrawText(iPPx - lCenter + 10, iPPy + 60, "[INVISIBLE]", RGB(255, 128, 64))
+                                    Else
+                                        Call Dialogos.DrawText(iPPx - lCenter, iPPy + 30, Left(TempChar.Nombre, InStr(TempChar.Nombre, "<") - 1), RGB(ColoresPJ(49).r, ColoresPJ(49).G, ColoresPJ(49).B))
+                                        lCenter = (frmMain.TextWidth(sClan) / 2) - 16
+                                        Call Dialogos.DrawText(iPPx - lCenter, iPPy + 45, sClan, RGB(ColoresPJ(49).r, ColoresPJ(49).G, ColoresPJ(49).B))
+                                        If TempChar.meveo = True Then Call Dialogos.DrawText(iPPx - lCenter + 10, iPPy + 60, "[INVISIBLE]", RGB(255, 128, 64))
+                                    End If
+                                Case 25  'admin
+                                    Call Dialogos.DrawTextBig(iPPx - lCenter, iPPy + 30, Left(TempChar.Nombre, InStr(TempChar.Nombre, "<") - 1), RGB(ColoresPJ(TempChar.priv).r, ColoresPJ(TempChar.priv).G, ColoresPJ(TempChar.priv).B))
+                                    lCenter = (frmMain.TextWidth(sClan) / 2) - 16
+                                    If TempChar.meveo = True Then Call Dialogos.DrawText(iPPx - lCenter + 10, iPPy + 60, "[INVISIBLE]", RGB(255, 128, 64))
+                                    Call Dialogos.DrawTextBig(iPPx - lCenter, iPPy + 45, sClan, RGB(ColoresPJ(TempChar.priv).r, ColoresPJ(TempChar.priv).G, ColoresPJ(TempChar.priv).B))
+                                Case Else 'el resto
+                                    Call Dialogos.DrawText(iPPx - lCenter, iPPy + 30, Left(TempChar.Nombre, InStr(TempChar.Nombre, "<") - 1), RGB(ColoresPJ(TempChar.priv).r, ColoresPJ(TempChar.priv).G, ColoresPJ(TempChar.priv).B))
+                                    lCenter = (frmMain.TextWidth(sClan) / 2) - 16
+                                    Call Dialogos.DrawText(iPPx - lCenter, iPPy + 45, sClan, RGB(ColoresPJ(TempChar.priv).r, ColoresPJ(TempChar.priv).G, ColoresPJ(TempChar.priv).B))
+                                    If TempChar.meveo = True Then Call Dialogos.DrawText(iPPx - lCenter + 10, iPPy + 60, "[INVISIBLE]", RGB(255, 128, 64))
+                                End Select
+                            Else
+                                lCenter = (frmMain.TextWidth(TempChar.Nombre) / 2) - 16
+                                Select Case TempChar.priv
+                                Case 0
+                                    If TempChar.Criminal Then
+                                        Call Dialogos.DrawText(iPPx - lCenter, iPPy + 30, TempChar.Nombre, RGB(ColoresPJ(50).r, ColoresPJ(50).G, ColoresPJ(50).B))
+                                        If TempChar.meveo = True Then Call Dialogos.DrawText(iPPx - lCenter + 10, iPPy + 45, "[INVISIBLE]", RGB(255, 128, 64))
+                                    Else
+                                        Call Dialogos.DrawText(iPPx - lCenter, iPPy + 30, TempChar.Nombre, RGB(ColoresPJ(49).r, ColoresPJ(49).G, ColoresPJ(49).B))
+                                        If TempChar.meveo = True Then Call Dialogos.DrawText(iPPx - lCenter + 10, iPPy + 45, "[INVISIBLE]", RGB(255, 128, 64))
+                                    End If
+                                Case 7
+                                    Call Dialogos.DrawTextBig(iPPx - lCenter, iPPy + 30, TempChar.Nombre, RGB(ColoresPJ(TempChar.priv).r, ColoresPJ(TempChar.priv).G, ColoresPJ(TempChar.priv).B))
+                                    If TempChar.meveo = True Then Call Dialogos.DrawText(iPPx - lCenter + 10, iPPy + 45, "[INVISIBLE]", RGB(255, 128, 64))
+                                Case Else
+                                    Call Dialogos.DrawText(iPPx - lCenter, iPPy + 30, TempChar.Nombre, RGB(ColoresPJ(TempChar.priv).r, ColoresPJ(TempChar.priv).G, ColoresPJ(TempChar.priv).B))
+                                    If TempChar.meveo = True Then Call Dialogos.DrawText(iPPx - lCenter + 10, iPPy + 45, "[INVISIBLE]", RGB(255, 128, 64))
+                                End Select
+                            End If
+                        End If
+                    End If  'enidf nI
+                 End If
+                
+            
+            
+            Else '<-> If TempChar.Head.Head(TempChar.Heading).GrhIndex <> 0 Then
+
+                If Dialogos.CantidadDialogos > 0 Then
+                    Call Dialogos.Update_Dialog_Pos( _
+                            (iPPx + TempChar.Body.HeadOffset.X), _
+                            (iPPy + TempChar.Body.HeadOffset.Y), _
+                            MapData(X, Y).CharIndex)
+                End If
+
+                Call DDrawTransGrhtoSurface( _
+                        BackBufferSurface, _
+                        TempChar.Body.Walk(TempChar.Heading), _
+                        iPPx, iPPy, 1, 1)
+                        
+            End If '<-> If TempChar.Head.Head(TempChar.Heading).GrhIndex <> 0 Then
+
+
+            'Refresh charlist
+            charlist(MapData(X, Y).CharIndex) = TempChar
+
+            'BlitFX (TM)
+            If charlist(MapData(X, Y).CharIndex).Fx <> 0 Then
+#If (ConAlfaB = 1) Then
+                If RenderMod.bNoAlpha Then
+#End If
+                    Call DDrawTransGrhtoSurface( _
+                            BackBufferSurface, _
+                            FxData(TempChar.Fx).Fx, _
+                            iPPx + FxData(TempChar.Fx).OffsetX, _
+                            iPPy + FxData(TempChar.Fx).OffsetY, _
+                            1, 1, MapData(X, Y).CharIndex)
+#If (ConAlfaB = 1) Then
+                Else
+                    Call DDrawTransGrhtoSurfaceAlpha( _
+                            BackBufferSurface, _
+                            FxData(TempChar.Fx).Fx, _
+                            iPPx + FxData(TempChar.Fx).OffsetX, _
+                            iPPy + FxData(TempChar.Fx).OffsetY, _
+                            1, 1, MapData(X, Y).CharIndex)
+                End If
+#End If
+            End If
+        End If '<-> If MapData(X, Y).CharIndex <> 0 Then
+        '*************************************************
+        'Layer 3 *****************************************
+        If MapData(X, Y).Graphic(3).GrhIndex <> 0 Then
+            'Draw
+            Call DDrawTransGrhtoSurface( _
+                    BackBufferSurface, _
+                    MapData(X, Y).Graphic(3), _
+                    ((32 * ScreenX) - 32) + PixelOffsetX, _
+                    ((32 * ScreenY) - 32) + PixelOffsetY, _
+                    1, 1)
+        End If
+        '************************************************
+        ScreenX = ScreenX + 1
+    Next X
+    ScreenY = ScreenY + 1
+    If Y >= 100 Or Y < 1 Then Exit For
+Next Y
+
+If Not bTecho Then
+    'Draw blocked tiles and grid
+    ScreenY = 5 + RenderMod.iImageSize
+    For Y = (minY + 5) + RenderMod.iImageSize To (maxY - 1) - RenderMod.iImageSize
+        ScreenX = 5 + RenderMod.iImageSize
+        For X = (minX + 5) + RenderMod.iImageSize To (maxX - 0) - RenderMod.iImageSize
+            'Check to see if in bounds
+            If X < 101 And X > 0 And Y < 101 And Y > 0 Then
+            If MapData(X, Y).Graphic(4).GrhIndex <> 0 Then
+                'Draw
+                Call DDrawTransGrhtoSurface( _
+                    BackBufferSurface, _
+                    MapData(X, Y).Graphic(4), _
+                    ((32 * ScreenX) - 32) + PixelOffsetX, _
+                    ((32 * ScreenY) - 32) + PixelOffsetY, _
+                    1, 1)
+            End If
+            End If
+            ScreenX = ScreenX + 1
+        Next X
+        ScreenY = ScreenY + 1
+    Next Y
+End If
+
+If bLluvia(UserMap) = 1 Then
+    If bRain Or bRainST Then
+                'Figure out what frame to draw
+                If llTick < DirectX.TickCount - 50 Then
+                    iFrameIndex = iFrameIndex + 1
+                    If iFrameIndex > 7 Then iFrameIndex = 0
+                    llTick = DirectX.TickCount
+                End If
+    
+                For Y = 0 To 4
+                    For X = 0 To 4
+                        Call BackBufferSurface.BltFast(LTLluvia(Y), LTLluvia(X), SurfaceDB.GetBMP(5556), RLluvia(iFrameIndex), DDBLTFAST_SRCCOLORKEY + DDBLTFAST_WAIT)
+                    Next X
+                Next Y
+    End If
+End If
+
+
+
+
+Dim PP As RECT
+
+PP.Left = 0
+PP.Top = 0
+PP.Right = WindowTileWidth * TilePixelWidth
+PP.Bottom = WindowTileHeight * TilePixelHeight
+
+
+End Sub

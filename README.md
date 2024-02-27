@@ -1,1 +1,1 @@
-### Servidor AOReady para Argentum Online 0.11.2
+### Servidor AOReady para Argentum Online 0.11.3

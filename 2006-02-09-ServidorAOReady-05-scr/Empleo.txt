@@ -1,0 +1,9 @@
+Si el npc tiene DropItem=1 entonces la forma de acomodar los items seria:
+Obj1=El Mas Valioso
+Obj2=Menos Valioso
+Obj3=Valioso
+Obj4=Normal
+Obj5=Normal
+Obj6=Normal
+Obj7=Porqueria
+Obj8=Porqueria
