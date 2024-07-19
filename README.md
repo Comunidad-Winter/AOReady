@@ -87,7 +87,6 @@ HTTP://WWW.ARGENTUM-ONLINE.COM.AR
 Un agradecimiento especial a Microsoft (www.microsoft.com) por sus excelentes
 controles para formularios que utilizamos en todos nuestros proyectos.
 
-
 ## Fuente: 
 
-Gs-Zone.org
+[Gs-Zone.org](https://www.gs-zone.org/)
